@@ -1,0 +1,32 @@
+initContainers:
+  - name: restore-db
+    image: postgres:15
+    command:
+      - bash
+      - -c
+      - |
+        if [ -f /backup/pgdump.sql ]; then
+          echo "Restoring database..."
+          psql -U $POSTGRES_USER -d $POSTGRES_DB -f /backup/pgdump.sql
+        else
+          echo "No backup file found. Skipping restore."
+        fi
+    env:
+      - name: POSTGRES_DB
+        valueFrom:
+          secretKeyRef:
+            name: postgres-secret
+            key: db-name
+      - name: POSTGRES_USER
+        valueFrom:
+          secretKeyRef:
+            name: postgres-secret
+            key: db-user
+      - name: PGPASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: postgres-secret
+            key: db-password
+    volumeMounts:
+      - name: backup-volume
+        mountPath: /backup
